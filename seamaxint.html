@@ -1,0 +1,1607 @@
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Search, ShoppingCart, X, Plus, Minus, Trash2, Settings, Package, ChevronLeft, ChevronRight, Star, Lock, LogOut, Edit2, Check, ImageOff, Menu, ArrowRight, ClipboardList, LayoutGrid, AlertCircle } from "lucide-react";
+
+/* ---------------------------------------------------------
+   SEAMAX INTERNATIONAL — storefront + admin
+   Design tokens:
+   navy   #0B1C30  (primary / ink)
+   navy2  #122844  (surfaces / header)
+   gold   #C9A052  (accent)
+   gold2  #E2C384  (accent light)
+   cream  #F7F4ED  (page background)
+   ink    #1B2430  (text)
+   slate  #5B6B80  (secondary text)
+   line   #E4DFD2  (hairline borders on cream)
+   ok     #2D7D5A
+--------------------------------------------------------- */
+
+const ADMIN_PASSWORD = "seamax2026";
+
+const SEED_CATEGORIES = [
+  { id: "cat_audio", name: "Audio", icon: "🎧", blurb: "Headphones, speakers, earbuds" },
+  { id: "cat_mobile", name: "Mobile accessories", icon: "📱", blurb: "Chargers, cases, cables" },
+  { id: "cat_home", name: "Smart home", icon: "🏠", blurb: "Plugs, lighting, cameras" },
+  { id: "cat_wearable", name: "Wearables", icon: "⌚", blurb: "Smartwatches, bands, trackers" },
+  { id: "cat_computing", name: "Computing", icon: "💻", blurb: "Peripherals, storage, hubs" },
+  { id: "cat_power", name: "Power", icon: "🔋", blurb: "Power banks, adapters" },
+];
+
+const SEED_PRODUCTS = [
+  {
+    id: "p_001",
+    name: "Aurora ANC Wireless Headphones",
+    categoryId: "cat_audio",
+    price: 4990,
+    compareAtPrice: 6500,
+    stock: 24,
+    sku: "SMX-AU-001",
+    rating: 4.6,
+    reviews: 128,
+    description:
+      "Over-ear wireless headphones with active noise cancellation, 40-hour battery life, and plush memory-foam ear cushions. Imported, factory sealed, full warranty.",
+    images: [
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+      "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&q=80",
+    ],
+    featured: true,
+  },
+  {
+    id: "p_002",
+    name: "Pulse TWS Earbuds Pro",
+    categoryId: "cat_audio",
+    price: 2290,
+    compareAtPrice: 2990,
+    stock: 50,
+    sku: "SMX-AU-002",
+    rating: 4.3,
+    reviews: 87,
+    description:
+      "True wireless earbuds with touch controls, IPX5 water resistance, and a compact fast-charging case. Great for commuting and workouts.",
+    images: ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&q=80"],
+    featured: true,
+  },
+  {
+    id: "p_003",
+    name: "VoltCore 20000mAh Power Bank",
+    categoryId: "cat_power",
+    price: 1850,
+    compareAtPrice: 0,
+    stock: 60,
+    sku: "SMX-PW-001",
+    rating: 4.7,
+    reviews: 204,
+    description:
+      "High-capacity power bank with dual USB-C PD fast charging, digital display, and aircraft-safe certification. Charges most phones 4-5 times.",
+    images: ["https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800&q=80"],
+    featured: true,
+  },
+  {
+    id: "p_004",
+    name: "Nimbus SmartWatch X2",
+    categoryId: "cat_wearable",
+    price: 3650,
+    compareAtPrice: 4200,
+    stock: 18,
+    sku: "SMX-WB-001",
+    rating: 4.4,
+    reviews: 61,
+    description:
+      "1.43-inch AMOLED smartwatch with heart-rate and SpO2 tracking, 7-day battery, and 100+ sport modes. Bluetooth calling included.",
+    images: ["https://images.unsplash.com/photo-1544117519-31a4b719223d?w=800&q=80"],
+    featured: true,
+  },
+  {
+    id: "p_005",
+    name: "Beacon Smart Plug (2-pack)",
+    categoryId: "cat_home",
+    price: 990,
+    compareAtPrice: 0,
+    stock: 75,
+    sku: "SMX-HM-001",
+    rating: 4.2,
+    reviews: 39,
+    description:
+      "Wi-Fi smart plugs with app and voice control, energy monitoring, and scheduling. Works with major voice assistants.",
+    images: ["https://images.unsplash.com/photo-1558002038-1055907df827?w=800&q=80"],
+    featured: false,
+  },
+  {
+    id: "p_006",
+    name: "Drift USB-C 7-in-1 Hub",
+    categoryId: "cat_computing",
+    price: 1690,
+    compareAtPrice: 1990,
+    stock: 33,
+    sku: "SMX-CP-001",
+    rating: 4.5,
+    reviews: 52,
+    description:
+      "Compact aluminium hub with HDMI 4K60, SD/microSD, 3x USB-A, and 100W PD passthrough. Built for laptops on the move.",
+    images: ["https://images.unsplash.com/photo-1591290619762-c4ec9f3e1e36?w=800&q=80"],
+    featured: false,
+  },
+  {
+    id: "p_007",
+    name: "Strand MagSafe Cable 2m",
+    categoryId: "cat_mobile",
+    price: 590,
+    compareAtPrice: 0,
+    stock: 120,
+    sku: "SMX-MB-001",
+    rating: 4.1,
+    reviews: 73,
+    description:
+      "Braided 2-metre charging cable with magnetic-safe connector, rated for 20,000+ bend cycles. Supports fast charging.",
+    images: ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800&q=80"],
+    featured: false,
+  },
+  {
+    id: "p_008",
+    name: "Horizon 27-inch 2K Monitor",
+    categoryId: "cat_computing",
+    price: 18900,
+    compareAtPrice: 21500,
+    stock: 9,
+    sku: "SMX-CP-002",
+    rating: 4.8,
+    reviews: 31,
+    description:
+      "27-inch QHD IPS monitor, 100Hz refresh rate, factory color calibration. Slim bezel design with height-adjustable stand.",
+    images: ["https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80"],
+    featured: true,
+  },
+];
+
+function formatBDT(n) {
+  const num = Number(n) || 0;
+  return "৳" + num.toLocaleString("en-US");
+}
+
+function uid(prefix) {
+  return prefix + "_" + Math.random().toString(36).slice(2, 10);
+}
+
+/* ---------------- storage helpers ---------------- */
+async function storeGet(key, fallback) {
+  try {
+    const res = await window.storage.get(key, true);
+    if (!res) return fallback;
+    return JSON.parse(res.value);
+  } catch (e) {
+    return fallback;
+  }
+}
+async function storeSet(key, value) {
+  try {
+    await window.storage.set(key, JSON.stringify(value), true);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ---------------- UI atoms ---------------- */
+
+function Logo({ size = 30 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <rect x="2" y="2" width="44" height="44" rx="10" fill="#0B1C30" />
+        <path d="M11 30C14 22 18 18 24 18C30 18 34 22 37 30" stroke="#C9A052" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+        <path d="M8 33C12 31 16 30 24 30C32 30 36 31 40 33" stroke="#E2C384" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+        <circle cx="24" cy="14" r="3.2" fill="#C9A052" />
+      </svg>
+      <div style={{ lineHeight: 1 }}>
+        <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 19, color: "#0B1C30", letterSpacing: "-0.01em" }}>
+          Seamax <span style={{ color: "#C9A052" }}>International</span>
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: "0.16em", color: "#5B6B80", fontWeight: 500, textTransform: "uppercase", marginTop: 1 }}>
+          Trusted import &amp; trade
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StarRow({ rating, size = 13 }) {
+  const full = Math.round(rating);
+  return (
+    <div style={{ display: "flex", gap: 1 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star key={i} size={size} fill={i <= full ? "#C9A052" : "none"} stroke={i <= full ? "#C9A052" : "#C7BEA8"} strokeWidth={1.5} />
+      ))}
+    </div>
+  );
+}
+
+function Badge({ children, tone = "gold" }) {
+  const tones = {
+    gold: { bg: "#FBF1DD", color: "#8A6315", border: "#EFD9A6" },
+    navy: { bg: "#E8EDF3", color: "#0B1C30", border: "#C9D2DE" },
+    ok: { bg: "#E4F3EB", color: "#1F6B49", border: "#BFE3D0" },
+    danger: { bg: "#FBEAEA", color: "#A23636", border: "#F2C8C8" },
+  };
+  const t = tones[tone];
+  return (
+    <span
+      style={{
+        background: t.bg,
+        color: t.color,
+        border: `1px solid ${t.border}`,
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "3px 8px",
+        borderRadius: 5,
+        letterSpacing: "0.02em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PrimaryButton({ children, onClick, style, disabled, type = "button", full }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        background: disabled ? "#C7BEA8" : "#0B1C30",
+        color: "#F7F4ED",
+        border: "none",
+        borderRadius: 8,
+        padding: "11px 20px",
+        fontSize: 14,
+        fontWeight: 600,
+        cursor: disabled ? "not-allowed" : "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        width: full ? "100%" : undefined,
+        transition: "background 0.15s ease, transform 0.1s ease",
+        ...style,
+      }}
+      onMouseEnter={(e) => !disabled && (e.currentTarget.style.background = "#16304F")}
+      onMouseLeave={(e) => !disabled && (e.currentTarget.style.background = "#0B1C30")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GoldButton({ children, onClick, style, full, type = "button" }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      style={{
+        background: "#C9A052",
+        color: "#1B1303",
+        border: "none",
+        borderRadius: 8,
+        padding: "11px 20px",
+        fontSize: 14,
+        fontWeight: 700,
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        width: full ? "100%" : undefined,
+        transition: "background 0.15s ease",
+        ...style,
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#DCB66B")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "#C9A052")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GhostButton({ children, onClick, style, full }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: "transparent",
+        color: "#0B1C30",
+        border: "1.5px solid #0B1C30",
+        borderRadius: 8,
+        padding: "10px 18px",
+        fontSize: 14,
+        fontWeight: 600,
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        width: full ? "100%" : undefined,
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <label style={{ display: "block", marginBottom: 14 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: "#1B2430", marginBottom: 6 }}>{label}</div>
+      {children}
+      {hint && <div style={{ fontSize: 11.5, color: "#8A93A0", marginTop: 4 }}>{hint}</div>}
+    </label>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  border: "1.5px solid #DCD5C2",
+  borderRadius: 7,
+  padding: "9px 11px",
+  fontSize: 14,
+  fontFamily: "inherit",
+  color: "#1B2430",
+  background: "#fff",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+function TextInput(props) {
+  return <input {...props} style={{ ...inputStyle, ...(props.style || {}) }} />;
+}
+function TextArea(props) {
+  return <textarea {...props} style={{ ...inputStyle, resize: "vertical", minHeight: 90, ...(props.style || {}) }} />;
+}
+function Select(props) {
+  return <select {...props} style={{ ...inputStyle, ...(props.style || {}) }} />;
+}
+
+function ImgSafe({ src, alt, style }) {
+  const [err, setErr] = useState(false);
+  if (!src || err) {
+    return (
+      <div style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", background: "#EFEAE0", color: "#A89E86" }}>
+        <ImageOff size={28} strokeWidth={1.5} />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} style={style} onError={() => setErr(true)} />;
+}
+
+/* ---------------- Product card ---------------- */
+
+function ProductCard({ product, category, onOpen, onAdd, index }) {
+  const ref = String(index + 1).padStart(3, "0");
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+  const pct = hasDiscount ? Math.round((1 - product.price / product.compareAtPrice) * 100) : 0;
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #E4DFD2",
+        borderRadius: 12,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        cursor: "pointer",
+        transition: "box-shadow 0.18s ease, transform 0.18s ease",
+      }}
+      onClick={() => onOpen(product)}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = "0 10px 24px rgba(11,28,48,0.10)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+    >
+      <div style={{ position: "relative", aspectRatio: "1/1", background: "#F1ECE0" }}>
+        <ImgSafe src={product.images && product.images[0]} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            fontSize: 10,
+            fontFamily: "'Fraunces', serif",
+            fontWeight: 600,
+            color: "#0B1C30",
+            background: "rgba(247,244,237,0.92)",
+            padding: "2px 7px",
+            borderRadius: 4,
+            letterSpacing: "0.04em",
+          }}
+        >
+          REF.{ref}
+        </div>
+        {hasDiscount && (
+          <div style={{ position: "absolute", top: 10, right: 10, background: "#0B1C30", color: "#E2C384", fontSize: 11, fontWeight: 700, padding: "3px 7px", borderRadius: 5 }}>
+            -{pct}%
+          </div>
+        )}
+        {product.stock <= 0 && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(11,28,48,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+              letterSpacing: "0.05em",
+            }}
+          >
+            OUT OF STOCK
+          </div>
+        )}
+      </div>
+      <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+        {category && <div style={{ fontSize: 10.5, color: "#A88B4A", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{category.name}</div>}
+        <div style={{ fontSize: 14, fontWeight: 600, color: "#1B2430", lineHeight: 1.35, minHeight: 38 }}>{product.name}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <StarRow rating={product.rating || 0} />
+          <span style={{ fontSize: 11.5, color: "#8A93A0" }}>({product.reviews || 0})</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: "#0B1C30" }}>{formatBDT(product.price)}</span>
+          {hasDiscount && <span style={{ fontSize: 12.5, color: "#A89E86", textDecoration: "line-through" }}>{formatBDT(product.compareAtPrice)}</span>}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd(product);
+          }}
+          disabled={product.stock <= 0}
+          style={{
+            marginTop: 8,
+            background: product.stock <= 0 ? "#EFEAE0" : "#F1ECE0",
+            color: "#0B1C30",
+            border: "1px solid #E4DFD2",
+            borderRadius: 7,
+            padding: "8px 10px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: product.stock <= 0 ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <ShoppingCart size={14} /> Add to cart
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Header ---------------- */
+
+function Header({ query, setQuery, cartCount, onCartClick, onAdminClick, onLogoClick, page }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  return (
+    <div style={{ position: "sticky", top: 0, zIndex: 40, background: "#F7F4ED" }}>
+      <div style={{ background: "#0B1C30", color: "#D9CBA8", fontSize: 12, textAlign: "center", padding: "6px 12px", letterSpacing: "0.03em" }}>
+        Free delivery inside Dhaka on orders over {formatBDT(3000)} · Genuine imported electronics
+      </div>
+      <div style={{ borderBottom: "1px solid #E4DFD2", background: "#FCFBF7" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 18 }}>
+          <div onClick={onLogoClick} style={{ cursor: "pointer", flexShrink: 0 }}>
+            <Logo />
+          </div>
+          <div style={{ flex: 1, position: "relative", display: window.innerWidth < 720 ? "none" : "block" }}>
+            <Search size={16} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#A89E86" }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search for headphones, power banks, smartwatches..."
+              style={{
+                width: "100%",
+                border: "1.5px solid #DCD5C2",
+                borderRadius: 24,
+                padding: "10px 14px 10px 38px",
+                fontSize: 14,
+                outline: "none",
+                background: "#fff",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <button
+              onClick={onAdminClick}
+              title="Admin panel"
+              style={{
+                background: page === "admin" ? "#0B1C30" : "transparent",
+                color: page === "admin" ? "#E2C384" : "#0B1C30",
+                border: "1.5px solid #0B1C30",
+                borderRadius: 8,
+                width: 38,
+                height: 38,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Settings size={17} />
+            </button>
+            <button
+              onClick={onCartClick}
+              style={{
+                position: "relative",
+                background: "#0B1C30",
+                color: "#F7F4ED",
+                border: "none",
+                borderRadius: 8,
+                width: 38,
+                height: 38,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <ShoppingCart size={17} />
+              {cartCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    background: "#C9A052",
+                    color: "#1B1303",
+                    fontSize: 10,
+                    fontWeight: 800,
+                    borderRadius: 999,
+                    minWidth: 17,
+                    height: 17,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 3px",
+                  }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px 12px", display: window.innerWidth < 720 ? "block" : "none" }}>
+          <div style={{ position: "relative" }}>
+            <Search size={16} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#A89E86" }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products..."
+              style={{
+                width: "100%",
+                border: "1.5px solid #DCD5C2",
+                borderRadius: 24,
+                padding: "10px 14px 10px 38px",
+                fontSize: 14,
+                outline: "none",
+                background: "#fff",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Cart drawer ---------------- */
+
+function CartDrawer({ open, onClose, cart, products, updateQty, removeItem, onCheckout }) {
+  if (!open) return null;
+  const lines = cart
+    .map((c) => ({ ...c, product: products.find((p) => p.id === c.productId) }))
+    .filter((l) => l.product);
+  const subtotal = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(11,28,48,0.45)" }} />
+      <div
+        style={{
+          position: "relative",
+          width: "min(420px, 92vw)",
+          height: "100%",
+          background: "#FCFBF7",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "-12px 0 32px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ padding: "18px 20px", borderBottom: "1px solid #E4DFD2", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 19, color: "#0B1C30" }}>Your cart</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#5B6B80" }}>
+            <X size={20} />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "10px 20px" }}>
+          {lines.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 10px", color: "#8A93A0" }}>
+              <ShoppingCart size={36} style={{ opacity: 0.4, marginBottom: 10 }} />
+              <div style={{ fontSize: 14 }}>Your cart is empty.</div>
+            </div>
+          ) : (
+            lines.map((l) => (
+              <div key={l.productId} style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "1px solid #ECE6D6" }}>
+                <ImgSafe src={l.product.images && l.product.images[0]} alt={l.product.name} style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", flexShrink: 0, background: "#F1ECE0" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1B2430", marginBottom: 4, lineHeight: 1.3 }}>{l.product.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0B1C30", marginBottom: 8 }}>{formatBDT(l.product.price)}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid #DCD5C2", borderRadius: 6 }}>
+                      <button onClick={() => updateQty(l.productId, l.qty - 1)} style={{ border: "none", background: "none", padding: "4px 8px", cursor: "pointer", color: "#0B1C30" }}>
+                        <Minus size={13} />
+                      </button>
+                      <span style={{ fontSize: 13, fontWeight: 600, minWidth: 18, textAlign: "center" }}>{l.qty}</span>
+                      <button onClick={() => updateQty(l.productId, l.qty + 1)} style={{ border: "none", background: "none", padding: "4px 8px", cursor: "pointer", color: "#0B1C30" }}>
+                        <Plus size={13} />
+                      </button>
+                    </div>
+                    <button onClick={() => removeItem(l.productId)} style={{ border: "none", background: "none", cursor: "pointer", color: "#A23636", display: "flex", alignItems: "center" }}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        {lines.length > 0 && (
+          <div style={{ padding: "16px 20px 20px", borderTop: "1px solid #E4DFD2" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4, color: "#5B6B80" }}>
+              <span>Subtotal</span>
+              <span style={{ color: "#1B2430", fontWeight: 700 }}>{formatBDT(subtotal)}</span>
+            </div>
+            <div style={{ fontSize: 11.5, color: "#8A93A0", marginBottom: 14 }}>Shipping and any applicable charges are calculated at checkout.</div>
+            <GoldButton full onClick={onCheckout}>
+              Checkout <ArrowRight size={15} />
+            </GoldButton>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Product detail modal ---------------- */
+
+function ProductModal({ product, category, onClose, onAdd }) {
+  const [imgIdx, setImgIdx] = useState(0);
+  const [qty, setQty] = useState(1);
+  if (!product) return null;
+  const images = product.images && product.images.length ? product.images : [null];
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(11,28,48,0.55)" }} />
+      <div style={{ position: "relative", background: "#FCFBF7", borderRadius: 16, maxWidth: 920, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "#fff", border: "1px solid #E4DFD2", borderRadius: 999, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}>
+          <X size={16} />
+        </button>
+        <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 720 ? "1fr" : "1fr 1fr" }}>
+          <div style={{ padding: 24 }}>
+            <div style={{ aspectRatio: "1/1", borderRadius: 12, overflow: "hidden", background: "#F1ECE0", marginBottom: 10 }}>
+              <ImgSafe src={images[imgIdx]} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+            {images.length > 1 && (
+              <div style={{ display: "flex", gap: 8 }}>
+                {images.map((im, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setImgIdx(i)}
+                    style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", border: i === imgIdx ? "2px solid #C9A052" : "2px solid transparent", cursor: "pointer", background: "#F1ECE0" }}
+                  >
+                    <ImgSafe src={im} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ padding: "24px 28px 28px 12px" }}>
+            {category && <div style={{ fontSize: 11, color: "#A88B4A", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>{category.name}</div>}
+            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 24, color: "#0B1C30", lineHeight: 1.25, marginBottom: 8 }}>{product.name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <StarRow rating={product.rating || 0} size={15} />
+              <span style={{ fontSize: 12.5, color: "#8A93A0" }}>
+                {product.rating || 0} · {product.reviews || 0} reviews
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+              <span style={{ fontSize: 26, fontWeight: 700, color: "#0B1C30" }}>{formatBDT(product.price)}</span>
+              {hasDiscount && <span style={{ fontSize: 15, color: "#A89E86", textDecoration: "line-through" }}>{formatBDT(product.compareAtPrice)}</span>}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              {product.stock > 0 ? (
+                <Badge tone="ok">{product.stock} in stock</Badge>
+              ) : (
+                <Badge tone="danger">Out of stock</Badge>
+              )}
+              <span style={{ marginLeft: 8, fontSize: 12, color: "#8A93A0" }}>SKU {product.sku}</span>
+            </div>
+            <p style={{ fontSize: 14, color: "#3D4F66", lineHeight: 1.65, marginBottom: 22 }}>{product.description}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", border: "1.5px solid #DCD5C2", borderRadius: 8 }}>
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ border: "none", background: "none", padding: "9px 13px", cursor: "pointer", color: "#0B1C30" }}>
+                  <Minus size={14} />
+                </button>
+                <span style={{ fontSize: 14, fontWeight: 600, minWidth: 22, textAlign: "center" }}>{qty}</span>
+                <button onClick={() => setQty((q) => Math.min(product.stock || 1, q + 1))} style={{ border: "none", background: "none", padding: "9px 13px", cursor: "pointer", color: "#0B1C30" }}>
+                  <Plus size={14} />
+                </button>
+              </div>
+              <GoldButton
+                style={{ flex: 1 }}
+                onClick={() => {
+                  onAdd(product, qty);
+                  onClose();
+                }}
+              >
+                <ShoppingCart size={15} /> Add to cart
+              </GoldButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Checkout ---------------- */
+
+function CheckoutPage({ cart, products, onPlaceOrder, onBack }) {
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
+  const [placed, setPlaced] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const lines = cart.map((c) => ({ ...c, product: products.find((p) => p.id === c.productId) })).filter((l) => l.product);
+  const subtotal = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
+  const shipping = subtotal >= 3000 || subtotal === 0 ? 0 : 80;
+  const total = subtotal + shipping;
+
+  const valid = form.name.trim() && form.phone.trim() && form.address.trim() && form.city.trim() && lines.length > 0;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    const order = {
+      id: uid("order"),
+      createdAt: new Date().toISOString(),
+      customer: { ...form },
+      items: lines.map((l) => ({ productId: l.product.id, name: l.product.name, price: l.product.price, qty: l.qty })),
+      subtotal,
+      shipping,
+      total,
+      status: "Pending",
+    };
+    await onPlaceOrder(order);
+    setSubmitting(false);
+    setPlaced(order);
+  };
+
+  if (placed) {
+    return (
+      <div style={{ maxWidth: 560, margin: "60px auto", padding: "0 20px", textAlign: "center" }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#E4F3EB", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+          <Check size={30} color="#1F6B49" />
+        </div>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, color: "#0B1C30", marginBottom: 8 }}>Order placed</div>
+        <p style={{ color: "#5B6B80", fontSize: 14, marginBottom: 6 }}>
+          Thank you, {placed.customer.name}. Your order reference is <strong style={{ color: "#0B1C30" }}>{placed.id}</strong>.
+        </p>
+        <p style={{ color: "#5B6B80", fontSize: 14, marginBottom: 28 }}>We'll call {placed.customer.phone} to confirm delivery details. Total due on delivery: <strong style={{ color: "#0B1C30" }}>{formatBDT(placed.total)}</strong>.</p>
+        <PrimaryButton onClick={onBack}>Continue shopping</PrimaryButton>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 980, margin: "0 auto", padding: "32px 20px 60px" }}>
+      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#5B6B80", fontSize: 13, cursor: "pointer", marginBottom: 18 }}>
+        <ChevronLeft size={15} /> Back to shopping
+      </button>
+      <div style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color: "#0B1C30", marginBottom: 24 }}>Checkout</div>
+      {lines.length === 0 ? (
+        <div style={{ color: "#8A93A0", fontSize: 14 }}>Your cart is empty. Add some products before checking out.</div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 800 ? "1fr" : "1.3fr 1fr", gap: 32 }}>
+          <form onSubmit={submit}>
+            <div style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 12, padding: 22 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0B1C30", marginBottom: 16 }}>Delivery details</div>
+              <Field label="Full name">
+                <TextInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your full name" required />
+              </Field>
+              <Field label="Phone number">
+                <TextInput value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="01XXXXXXXXX" required />
+              </Field>
+              <Field label="Delivery address">
+                <TextArea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="House, road, area" required />
+              </Field>
+              <Field label="City">
+                <TextInput value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="e.g. Dhaka, Sylhet, Chattogram" required />
+              </Field>
+              <Field label="Order notes (optional)">
+                <TextArea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Delivery instructions, preferred time, etc." />
+              </Field>
+              <div style={{ background: "#F1ECE0", border: "1px solid #E4DFD2", borderRadius: 8, padding: 12, fontSize: 12.5, color: "#5B6B80", marginBottom: 16, display: "flex", gap: 8 }}>
+                <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1, color: "#A88B4A" }} />
+                <span>Cash on delivery for now. Online payment can be added once a payment provider is connected.</span>
+              </div>
+              <GoldButton type="submit" full disabled={!valid} style={!valid ? { opacity: 0.5, cursor: "not-allowed" } : {}}>
+                {submitting ? "Placing order..." : `Place order · ${formatBDT(total)}`}
+              </GoldButton>
+            </div>
+          </form>
+          <div>
+            <div style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 12, padding: 22 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0B1C30", marginBottom: 14 }}>Order summary</div>
+              {lines.map((l) => (
+                <div key={l.productId} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 10, color: "#3D4F66" }}>
+                  <span style={{ maxWidth: 220 }}>
+                    {l.product.name} <span style={{ color: "#A89E86" }}>×{l.qty}</span>
+                  </span>
+                  <span style={{ fontWeight: 600, color: "#1B2430" }}>{formatBDT(l.product.price * l.qty)}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: "1px solid #ECE6D6", marginTop: 10, paddingTop: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#5B6B80", marginBottom: 6 }}>
+                  <span>Subtotal</span>
+                  <span>{formatBDT(subtotal)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#5B6B80", marginBottom: 10 }}>
+                  <span>Shipping</span>
+                  <span>{shipping === 0 ? "Free" : formatBDT(shipping)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 700, color: "#0B1C30" }}>
+                  <span>Total</span>
+                  <span>{formatBDT(total)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Home / storefront ---------------- */
+
+function Hero({ onShop }) {
+  return (
+    <div style={{ background: "linear-gradient(135deg, #0B1C30 0%, #122844 100%)", color: "#F7F4ED", position: "relative", overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "radial-gradient(circle at 85% 20%, rgba(201,160,82,0.16), transparent 45%), radial-gradient(circle at 15% 80%, rgba(201,160,82,0.08), transparent 40%)",
+        }}
+      />
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 20px 56px", position: "relative", display: "grid", gridTemplateColumns: window.innerWidth < 860 ? "1fr" : "1.1fr 0.9fr", gap: 40, alignItems: "center" }}>
+        <div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(226,195,132,0.12)", border: "1px solid rgba(226,195,132,0.3)", borderRadius: 999, padding: "5px 13px", fontSize: 11.5, fontWeight: 600, color: "#E2C384", marginBottom: 20, letterSpacing: "0.03em" }}>
+            DIRECT IMPORT · NATIONWIDE DELIVERY
+          </div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: "clamp(32px, 4.2vw, 48px)", lineHeight: 1.12, marginBottom: 18 }}>
+            Imported electronics,
+            <br />
+            <span style={{ color: "#E2C384" }}>shipped to your door.</span>
+          </div>
+          <p style={{ fontSize: 15.5, color: "#B9C3D2", lineHeight: 1.65, maxWidth: 460, marginBottom: 28 }}>
+            Seamax International sources audio gear, smart devices and accessories directly from global manufacturers — genuine stock, fair prices, and a manifest you can trust.
+          </p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <GoldButton onClick={onShop}>
+              Shop the catalog <ArrowRight size={15} />
+            </GoldButton>
+            <GhostButton style={{ borderColor: "#3D4F66", color: "#F7F4ED" }} onClick={onShop}>
+              Browse categories
+            </GhostButton>
+          </div>
+          <div style={{ display: "flex", gap: 28, marginTop: 36, flexWrap: "wrap" }}>
+            {[
+              ["8+", "Categories"],
+              ["100%", "Genuine stock"],
+              ["64", "Districts served"],
+            ].map(([n, l]) => (
+              <div key={l}>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, color: "#E2C384" }}>{n}</div>
+                <div style={{ fontSize: 11.5, color: "#8493A8", letterSpacing: "0.02em" }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: window.innerWidth < 860 ? "none" : "block" }}>
+          <div style={{ border: "1px solid rgba(226,195,132,0.25)", borderRadius: 16, padding: 4, background: "rgba(255,255,255,0.02)" }}>
+            <ImgSafe
+              src="https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=900&q=80"
+              alt="Electronics shipment"
+              style={{ width: "100%", height: 360, objectFit: "cover", borderRadius: 13 }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryStrip({ categories, activeCategory, setActiveCategory }) {
+  return (
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 20px 6px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 21, fontWeight: 600, color: "#0B1C30" }}>Shop by category</div>
+        {activeCategory && (
+          <button onClick={() => setActiveCategory(null)} style={{ background: "none", border: "none", color: "#A88B4A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+            Clear filter ×
+          </button>
+        )}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(140px, 1fr))`, gap: 12 }}>
+        {categories.map((c) => (
+          <div
+            key={c.id}
+            onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
+            style={{
+              background: activeCategory === c.id ? "#0B1C30" : "#fff",
+              border: activeCategory === c.id ? "1px solid #0B1C30" : "1px solid #E4DFD2",
+              borderRadius: 12,
+              padding: "16px 14px",
+              cursor: "pointer",
+              textAlign: "center",
+              transition: "transform 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+          >
+            <div style={{ fontSize: 26, marginBottom: 8 }}>{c.icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: activeCategory === c.id ? "#E2C384" : "#1B2430" }}>{c.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <div style={{ background: "#0B1C30", color: "#8493A8", marginTop: 60 }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "44px 20px", display: "grid", gridTemplateColumns: window.innerWidth < 700 ? "1fr" : "1.4fr 1fr 1fr", gap: 32 }}>
+        <div>
+          <Logo size={26} />
+          <p style={{ fontSize: 13, lineHeight: 1.7, marginTop: 14, maxWidth: 320, color: "#7C8AA0" }}>
+            Seamax International imports and distributes consumer electronics across the country, connecting global manufacturers with local customers.
+          </p>
+        </div>
+        <div>
+          <div style={{ color: "#E2C384", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: "0.04em" }}>COMPANY</div>
+          {["About us", "Contact", "Track an order", "Returns policy"].map((t) => (
+            <div key={t} style={{ fontSize: 13, marginBottom: 9, color: "#A8B3C4" }}>
+              {t}
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ color: "#E2C384", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: "0.04em" }}>CONTACT</div>
+          <div style={{ fontSize: 13, marginBottom: 9, color: "#A8B3C4" }}>hello@seamaxintl.com</div>
+          <div style={{ fontSize: 13, marginBottom: 9, color: "#A8B3C4" }}>+880 1XXX-XXXXXX</div>
+          <div style={{ fontSize: 13, color: "#A8B3C4" }}>Dhaka, Bangladesh</div>
+        </div>
+      </div>
+      <div style={{ borderTop: "1px solid #1C3552", padding: "16px 20px", textAlign: "center", fontSize: 11.5, color: "#5E6E84" }}>
+        © {new Date().getFullYear()} Seamax International. All rights reserved.
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Admin ---------------- */
+
+function AdminLogin({ onLogin }) {
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState(false);
+  const submit = (e) => {
+    e.preventDefault();
+    if (pw === ADMIN_PASSWORD) {
+      onLogin();
+    } else {
+      setError(true);
+    }
+  };
+  return (
+    <div style={{ maxWidth: 380, margin: "80px auto", padding: "0 20px" }}>
+      <div style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 14, padding: 32, textAlign: "center" }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#F1ECE0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <Lock size={22} color="#0B1C30" />
+        </div>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 600, color: "#0B1C30", marginBottom: 4 }}>Admin sign-in</div>
+        <p style={{ fontSize: 13, color: "#8A93A0", marginBottom: 20 }}>Manage products, categories and orders.</p>
+        <form onSubmit={submit}>
+          <TextInput
+            type="password"
+            value={pw}
+            onChange={(e) => {
+              setPw(e.target.value);
+              setError(false);
+            }}
+            placeholder="Admin password"
+            style={{ textAlign: "center", marginBottom: 10 }}
+            autoFocus
+          />
+          {error && <div style={{ color: "#A23636", fontSize: 12.5, marginBottom: 10 }}>Incorrect password. Try again.</div>}
+          <PrimaryButton type="submit" full>
+            Sign in
+          </PrimaryButton>
+        </form>
+        <p style={{ fontSize: 11, color: "#B5ADA0", marginTop: 16 }}>Default password: seamax2026 — change ADMIN_PASSWORD in the code to update it.</p>
+      </div>
+    </div>
+  );
+}
+
+function emptyProduct(categories) {
+  return {
+    id: "",
+    name: "",
+    categoryId: categories[0] ? categories[0].id : "",
+    price: "",
+    compareAtPrice: "",
+    stock: "",
+    sku: "",
+    rating: 4.5,
+    reviews: 0,
+    description: "",
+    images: [""],
+    featured: false,
+  };
+}
+
+function ProductForm({ initial, categories, onSave, onCancel }) {
+  const [form, setForm] = useState(initial);
+  const setImg = (i, val) => {
+    const imgs = [...form.images];
+    imgs[i] = val;
+    setForm({ ...form, images: imgs });
+  };
+  const addImgField = () => setForm({ ...form, images: [...form.images, ""] });
+  const removeImgField = (i) => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) });
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.price) return;
+    onSave({
+      ...form,
+      id: form.id || uid("p"),
+      price: Number(form.price) || 0,
+      compareAtPrice: Number(form.compareAtPrice) || 0,
+      stock: Number(form.stock) || 0,
+      rating: Number(form.rating) || 0,
+      reviews: Number(form.reviews) || 0,
+      images: form.images.filter((s) => s && s.trim()),
+    });
+  };
+
+  return (
+    <form onSubmit={submit} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 12, padding: 22 }}>
+      <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 720 ? "1fr" : "1fr 1fr", gap: "0 20px" }}>
+        <Field label="Product name">
+          <TextInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        </Field>
+        <Field label="Category">
+          <Select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Price (৳)">
+          <TextInput type="number" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+        </Field>
+        <Field label="Compare-at price (৳)" hint="Optional — shows as a strikethrough discount price">
+          <TextInput type="number" min="0" value={form.compareAtPrice} onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })} />
+        </Field>
+        <Field label="Stock quantity">
+          <TextInput type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+        </Field>
+        <Field label="SKU">
+          <TextInput value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="SMX-XX-000" />
+        </Field>
+        <Field label="Rating (0–5)">
+          <TextInput type="number" min="0" max="5" step="0.1" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+        </Field>
+        <Field label="Review count">
+          <TextInput type="number" min="0" value={form.reviews} onChange={(e) => setForm({ ...form, reviews: e.target.value })} />
+        </Field>
+      </div>
+      <Field label="Description">
+        <TextArea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      </Field>
+      <Field label="Image URLs" hint="Paste image links (e.g. from Unsplash, your supplier, or your own hosting). First image is the cover.">
+        {form.images.map((img, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <TextInput value={img} onChange={(e) => setImg(i, e.target.value)} placeholder="https://..." />
+            {form.images.length > 1 && (
+              <button type="button" onClick={() => removeImgField(i)} style={{ border: "1.5px solid #DCD5C2", background: "#fff", borderRadius: 7, padding: "0 10px", cursor: "pointer", color: "#A23636" }}>
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={addImgField} style={{ border: "1.5px dashed #DCD5C2", background: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12.5, color: "#5B6B80", cursor: "pointer" }}>
+          + Add another image
+        </button>
+      </Field>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18, marginTop: 4, fontSize: 13.5, fontWeight: 600, color: "#1B2430", cursor: "pointer" }}>
+        <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
+        Feature on homepage
+      </label>
+      <div style={{ display: "flex", gap: 10 }}>
+        <PrimaryButton type="submit">{form.id ? "Save changes" : "Add product"}</PrimaryButton>
+        <GhostButton onClick={onCancel}>Cancel</GhostButton>
+      </div>
+    </form>
+  );
+}
+
+function AdminPanel({ categories, setCategories, products, setProducts, orders, onLogout }) {
+  const [tab, setTab] = useState("products");
+  const [editing, setEditing] = useState(null); // product being edited, or "new"
+  const [newCat, setNewCat] = useState({ name: "", icon: "🛍️", blurb: "" });
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const saveProduct = async (p) => {
+    let next;
+    if (products.find((x) => x.id === p.id)) {
+      next = products.map((x) => (x.id === p.id ? p : x));
+    } else {
+      next = [p, ...products];
+    }
+    setProducts(next);
+    setEditing(null);
+  };
+
+  const deleteProduct = async (id) => {
+    setProducts(products.filter((p) => p.id !== id));
+    setConfirmDelete(null);
+  };
+
+  const addCategory = async (e) => {
+    e.preventDefault();
+    if (!newCat.name.trim()) return;
+    const cat = { id: uid("cat"), ...newCat };
+    setCategories([...categories, cat]);
+    setNewCat({ name: "", icon: "🛍️", blurb: "" });
+  };
+
+  const deleteCategory = async (id) => {
+    if (products.some((p) => p.categoryId === id)) {
+      alert("Move or delete products in this category first.");
+      return;
+    }
+    setCategories(categories.filter((c) => c.id !== id));
+  };
+
+  const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
+
+  return (
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 20px 70px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color: "#0B1C30" }}>Admin panel</div>
+          <div style={{ fontSize: 13, color: "#8A93A0" }}>Manage your Seamax International storefront</div>
+        </div>
+        <GhostButton onClick={onLogout}>
+          <LogOut size={14} /> Sign out
+        </GhostButton>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 26 }}>
+        {[
+          ["Products", products.length],
+          ["Categories", categories.length],
+          ["Orders", orders.length],
+          ["Revenue (placed)", formatBDT(totalRevenue)],
+        ].map(([label, val]) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 11.5, color: "#8A93A0", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#0B1C30" }}>{val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #E4DFD2", marginBottom: 22 }}>
+        {[
+          ["products", "Products", LayoutGrid],
+          ["categories", "Categories", Package],
+          ["orders", "Orders", ClipboardList],
+        ].map(([key, label, Icon]) => (
+          <button
+            key={key}
+            onClick={() => {
+              setTab(key);
+              setEditing(null);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "10px 16px",
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: tab === key ? "#0B1C30" : "#8A93A0",
+              borderBottom: tab === key ? "2.5px solid #C9A052" : "2.5px solid transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              marginBottom: -1,
+            }}
+          >
+            <Icon size={15} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "products" && (
+        <div>
+          {editing ? (
+            <ProductForm
+              initial={editing === "new" ? emptyProduct(categories) : editing}
+              categories={categories}
+              onSave={saveProduct}
+              onCancel={() => setEditing(null)}
+            />
+          ) : (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <PrimaryButton onClick={() => setEditing("new")}>
+                  <Plus size={15} /> Add product
+                </PrimaryButton>
+              </div>
+              {products.length === 0 ? (
+                <div style={{ color: "#8A93A0", fontSize: 14, padding: "30px 0", textAlign: "center" }}>No products yet. Add your first one.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {products.map((p) => {
+                    const cat = categories.find((c) => c.id === p.categoryId);
+                    return (
+                      <div key={p.id} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+                        <ImgSafe src={p.images && p.images[0]} alt={p.name} style={{ width: 50, height: 50, borderRadius: 7, objectFit: "cover", flexShrink: 0, background: "#F1ECE0" }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1B2430" }}>{p.name}</div>
+                          <div style={{ fontSize: 12, color: "#8A93A0" }}>
+                            {cat ? cat.name : "Uncategorized"} · {formatBDT(p.price)} · {p.stock} in stock
+                          </div>
+                        </div>
+                        {p.featured && <Badge tone="gold">Featured</Badge>}
+                        <button onClick={() => setEditing(p)} style={{ border: "1.5px solid #DCD5C2", background: "#fff", borderRadius: 7, padding: 8, cursor: "pointer", color: "#0B1C30" }}>
+                          <Edit2 size={14} />
+                        </button>
+                        {confirmDelete === p.id ? (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => deleteProduct(p.id)} style={{ border: "none", background: "#A23636", color: "#fff", borderRadius: 7, padding: "8px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                              Confirm
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)} style={{ border: "1.5px solid #DCD5C2", background: "#fff", borderRadius: 7, padding: "8px 10px", fontSize: 12, cursor: "pointer" }}>
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(p.id)} style={{ border: "1.5px solid #F2C8C8", background: "#fff", borderRadius: 7, padding: 8, cursor: "pointer", color: "#A23636" }}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {tab === "categories" && (
+        <div>
+          <form onSubmit={addCategory} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 12, padding: 18, marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Field label="Icon (emoji)" hint="">
+              <TextInput value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} style={{ width: 70 }} />
+            </Field>
+            <Field label="Category name">
+              <TextInput value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder="e.g. Gaming" />
+            </Field>
+            <Field label="Short description">
+              <TextInput value={newCat.blurb} onChange={(e) => setNewCat({ ...newCat, blurb: e.target.value })} placeholder="What's in this category" />
+            </Field>
+            <PrimaryButton type="submit" style={{ marginBottom: 14 }}>
+              <Plus size={15} /> Add category
+            </PrimaryButton>
+          </form>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {categories.map((c) => (
+              <div key={c.id} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ fontSize: 22 }}>{c.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1B2430" }}>{c.name}</div>
+                  <div style={{ fontSize: 12, color: "#8A93A0" }}>{c.blurb}</div>
+                </div>
+                <div style={{ fontSize: 12, color: "#8A93A0" }}>{products.filter((p) => p.categoryId === c.id).length} products</div>
+                <button onClick={() => deleteCategory(c.id)} style={{ border: "1.5px solid #F2C8C8", background: "#fff", borderRadius: 7, padding: 8, cursor: "pointer", color: "#A23636" }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === "orders" && (
+        <div>
+          {orders.length === 0 ? (
+            <div style={{ color: "#8A93A0", fontSize: 14, padding: "30px 0", textAlign: "center" }}>No orders placed yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {orders
+                .slice()
+                .reverse()
+                .map((o) => (
+                  <div key={o.id} style={{ background: "#fff", border: "1px solid #E4DFD2", borderRadius: 10, padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0B1C30" }}>{o.id}</div>
+                        <div style={{ fontSize: 12, color: "#8A93A0" }}>{new Date(o.createdAt).toLocaleString()}</div>
+                      </div>
+                      <Badge tone="navy">{o.status}</Badge>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#3D4F66", marginBottom: 8 }}>
+                      <strong style={{ color: "#1B2430" }}>{o.customer.name}</strong> · {o.customer.phone} · {o.customer.city}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#8A93A0", marginBottom: 10 }}>{o.customer.address}</div>
+                    <div style={{ borderTop: "1px solid #ECE6D6", paddingTop: 8 }}>
+                      {o.items.map((it, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#5B6B80", marginBottom: 4 }}>
+                          <span>
+                            {it.name} ×{it.qty}
+                          </span>
+                          <span>{formatBDT(it.price * it.qty)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", fontSize: 14, fontWeight: 700, color: "#0B1C30", marginTop: 8 }}>{formatBDT(o.total)}</div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- App root ---------------- */
+
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategoriesState] = useState(SEED_CATEGORIES);
+  const [products, setProductsState] = useState(SEED_PRODUCTS);
+  const [orders, setOrdersState] = useState([]);
+  const [cart, setCart] = useState([]);
+
+  const [page, setPage] = useState("home"); // home | checkout | admin
+  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(null);
+  const [adminAuthed, setAdminAuthed] = useState(false);
+
+  // Load from storage on mount
+  useEffect(() => {
+    (async () => {
+      const [cats, prods, ords] = await Promise.all([
+        storeGet("seamax:categories", null),
+        storeGet("seamax:products", null),
+        storeGet("seamax:orders", []),
+      ]);
+      if (cats) setCategoriesState(cats);
+      else await storeSet("seamax:categories", SEED_CATEGORIES);
+      if (prods) setProductsState(prods);
+      else await storeSet("seamax:products", SEED_PRODUCTS);
+      setOrdersState(ords || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const setCategories = useCallback((next) => {
+    setCategoriesState(next);
+    storeSet("seamax:categories", next);
+  }, []);
+  const setProducts = useCallback((next) => {
+    setProductsState(next);
+    storeSet("seamax:products", next);
+  }, []);
+  const addOrder = useCallback(
+    async (order) => {
+      const next = [...orders, order];
+      setOrdersState(next);
+      await storeSet("seamax:orders", next);
+      // also reduce stock
+      const updatedProducts = products.map((p) => {
+        const line = order.items.find((it) => it.productId === p.id);
+        return line ? { ...p, stock: Math.max(0, p.stock - line.qty) } : p;
+      });
+      setProducts(updatedProducts);
+      setCart([]);
+    },
+    [orders, products, setProducts]
+  );
+
+  const addToCart = (product, qty = 1) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.productId === product.id);
+      if (existing) {
+        return prev.map((c) => (c.productId === product.id ? { ...c, qty: Math.min(product.stock, c.qty + qty) } : c));
+      }
+      return [...prev, { productId: product.id, qty: Math.min(product.stock, qty) }];
+    });
+    setCartOpen(true);
+  };
+  const updateQty = (productId, qty) => {
+    if (qty <= 0) {
+      setCart((prev) => prev.filter((c) => c.productId !== productId));
+      return;
+    }
+    setCart((prev) => prev.map((c) => (c.productId === productId ? { ...c, qty } : c)));
+  };
+  const removeItem = (productId) => setCart((prev) => prev.filter((c) => c.productId !== productId));
+  const cartCount = cart.reduce((s, c) => s + c.qty, 0);
+
+  const filteredProducts = useMemo(() => {
+    let list = products;
+    if (activeCategory) list = list.filter((p) => p.categoryId === activeCategory);
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q));
+    }
+    return list;
+  }, [products, activeCategory, query]);
+
+  const featuredProducts = useMemo(() => products.filter((p) => p.featured), [products]);
+
+  const goHome = () => {
+    setPage("home");
+    setActiveCategory(null);
+    setQuery("");
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: 400, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif", color: "#5B6B80" }}>
+        Loading Seamax International...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#F7F4ED", minHeight: "100vh", color: "#1B2430" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        input:focus, textarea:focus, select:focus { border-color: #C9A052 !important; box-shadow: 0 0 0 3px rgba(201,160,82,0.15); }
+        button { font-family: inherit; }
+      `}</style>
+
+      <Header
+        query={query}
+        setQuery={(q) => {
+          setQuery(q);
+          setPage("home");
+        }}
+        cartCount={cartCount}
+        onCartClick={() => setCartOpen(true)}
+        onAdminClick={() => setPage("admin")}
+        onLogoClick={goHome}
+        page={page}
+      />
+
+      {page === "admin" ? (
+        adminAuthed ? (
+          <AdminPanel categories={categories} setCategories={setCategories} products={products} setProducts={setProducts} orders={orders} onLogout={() => setAdminAuthed(false)} />
+        ) : (
+          <AdminLogin onLogin={() => setAdminAuthed(true)} />
+        )
+      ) : page === "checkout" ? (
+        <CheckoutPage cart={cart} products={products} onPlaceOrder={addOrder} onBack={goHome} />
+      ) : (
+        <>
+          {!query.trim() && !activeCategory && <Hero onShop={() => document.getElementById("catalog-anchor")?.scrollIntoView({ behavior: "smooth" })} />}
+
+          <CategoryStrip categories={categories} activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+
+          {!query.trim() && !activeCategory && featuredProducts.length > 0 && (
+            <div style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 20px 6px" }}>
+              <div style={{ fontFamily: "'Fraunces', serif", fontSize: 21, fontWeight: 600, color: "#0B1C30", marginBottom: 16 }}>Featured this week</div>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(220px, 1fr))`, gap: 16 }}>
+                {featuredProducts.map((p, i) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    category={categories.find((c) => c.id === p.categoryId)}
+                    onOpen={setActiveProduct}
+                    onAdd={addToCart}
+                    index={i}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div id="catalog-anchor" style={{ maxWidth: 1180, margin: "0 auto", padding: "34px 20px 10px" }}>
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 21, fontWeight: 600, color: "#0B1C30", marginBottom: 16 }}>
+              {query.trim() ? `Results for "${query}"` : activeCategory ? categories.find((c) => c.id === activeCategory)?.name : "All products"}
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#8A93A0", marginLeft: 10 }}>({filteredProducts.length})</span>
+            </div>
+            {filteredProducts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "50px 0", color: "#8A93A0" }}>
+                <Package size={32} style={{ opacity: 0.4, marginBottom: 10 }} />
+                <div style={{ fontSize: 14 }}>No products found. Try a different search or category.</div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(220px, 1fr))`, gap: 16, paddingBottom: 20 }}>
+                {filteredProducts.map((p, i) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    category={categories.find((c) => c.id === p.categoryId)}
+                    onOpen={setActiveProduct}
+                    onAdd={addToCart}
+                    index={i}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Footer />
+        </>
+      )}
+
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        cart={cart}
+        products={products}
+        updateQty={updateQty}
+        removeItem={removeItem}
+        onCheckout={() => {
+          setCartOpen(false);
+          setPage("checkout");
+        }}
+      />
+
+      <ProductModal
+        product={activeProduct}
+        category={activeProduct ? categories.find((c) => c.id === activeProduct.categoryId) : null}
+        onClose={() => setActiveProduct(null)}
+        onAdd={addToCart}
+      />
+    </div>
+  );
+}
